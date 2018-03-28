@@ -403,8 +403,17 @@ export interface IAdapterExecutable {
 	args?: string[];
 }
 
+/**
+ * This information is used for launching a debug adapter locally or in the (remote) extension host.
+ * If an 'adapterExecutable' is present, its command and args are used without modification (and the other attributes are not used).
+ * Otherwise the command and arguments are determined from the other attributes for the underlying platform.
+ */
 export interface IAdapterExecutableInfo extends IRawEnvAdapter {
+
+	adapterExecutable?: IAdapterExecutable;
+
 	extensionFolderPath?: string;
+
 	win?: IRawEnvAdapter;
 	winx86?: IRawEnvAdapter;
 	windows?: IRawEnvAdapter;

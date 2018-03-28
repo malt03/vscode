@@ -11,6 +11,7 @@ import { Adapter } from 'vs/workbench/parts/debug/node/debugAdapter';
 import { TestConfigurationService } from 'vs/platform/configuration/test/common/testConfigurationService';
 import uri from 'vs/base/common/uri';
 import { TPromise } from 'vs/base/common/winjs.base';
+import { LocalDebugAdapter } from 'vs/workbench/parts/debug/node/v8Protocol';
 
 
 suite('Debug - Adapter', () => {
@@ -63,9 +64,12 @@ suite('Debug - Adapter', () => {
 		assert.equal(adapter.type, rawAdapter.type);
 		assert.equal(adapter.label, rawAdapter.label);
 
-		return adapter.getAdapterExecutable(undefined, false).then(details => {
-			assert.equal(details.command, paths.join(extensionFolderPath, rawAdapter.program));
-			assert.deepEqual(details.args, rawAdapter.args);
+		return adapter.getAdapterExecutable(undefined).then(details => {
+
+			const ae = LocalDebugAdapter.platformAdapterExecutable(details);
+
+			assert.equal(ae.command, paths.join(extensionFolderPath, rawAdapter.program));
+			assert.deepEqual(ae.args, rawAdapter.args);
 		});
 	});
 
@@ -111,9 +115,12 @@ suite('Debug - Adapter', () => {
 			engines: null
 		});
 
-		return adapter.getAdapterExecutable(undefined, false).then(details => {
-			assert.equal(details.command, platform.isLinux ? da.linux.runtime : platform.isMacintosh ? da.osx.runtime : da.win.runtime);
-			assert.deepEqual(details.args, da.runtimeArgs.concat(['a/b/c/d/mockprogram'].concat(da.args)));
+		return adapter.getAdapterExecutable(undefined).then(details => {
+
+			const ae = LocalDebugAdapter.platformAdapterExecutable(details);
+
+			assert.equal(ae.command, platform.isLinux ? da.linux.runtime : platform.isMacintosh ? da.osx.runtime : da.win.runtime);
+			assert.deepEqual(ae.args, da.runtimeArgs.concat(['a/b/c/d/mockprogram'].concat(da.args)));
 		});
 	});
 

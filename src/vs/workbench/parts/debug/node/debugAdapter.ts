@@ -3,8 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as fs from 'fs';
-import * as path from 'path';
 import * as nls from 'vs/nls';
 import { TPromise } from 'vs/base/common/winjs.base';
 import * as strings from 'vs/base/common/strings';
@@ -33,7 +31,7 @@ export class Adapter {
 	public hasConfigurationProvider = false;
 
 	public createDebugAdapter(root: IWorkspaceFolder, outputService: IOutputService): TPromise<IDebugAdapter> {
-		return this.getAdapterExecutable2(root).then(aei => {
+		return this.getAdapterExecutable(root).then(aei => {
 			const debugConfigs = this.configurationService.getValue<IDebugConfiguration>('debug');
 			if (debugConfigs.extensionHostDebugAdapter) {
 				return this.configurationManager.createDebugAdapter(this.rawAdapter.type, aei);
@@ -43,17 +41,23 @@ export class Adapter {
 		});
 	}
 
-	public getAdapterExecutable2(root: IWorkspaceFolder): TPromise<IAdapterExecutableInfo> {
+	public getAdapterExecutable(root: IWorkspaceFolder): TPromise<IAdapterExecutableInfo> {
 
 		return this.configurationManager.debugAdapterExecutable(root ? root.uri : undefined, this.rawAdapter.type).then(adapterExecutable => {
 
 			if (adapterExecutable) {
-				return adapterExecutable;
+				return <IAdapterExecutableInfo>{
+					adapterExecutable: adapterExecutable
+				};
 			}
 
 			// try deprecated command based extension API
 			if (this.rawAdapter.adapterExecutableCommand) {
-				return this.commandService.executeCommand<IAdapterExecutable>(this.rawAdapter.adapterExecutableCommand, root ? root.uri.toString() : undefined);
+				return this.commandService.executeCommand<IAdapterExecutable>(this.rawAdapter.adapterExecutableCommand, root ? root.uri.toString() : undefined).then(ae => {
+					return <IAdapterExecutableInfo>{
+						adapterExecutable: ae
+					};
+				});
 			}
 
 			const aei = <IAdapterExecutableInfo>{
@@ -70,68 +74,6 @@ export class Adapter {
 			};
 			return TPromise.as(aei);
 		});
-	}
-
-	public getAdapterExecutable(root: IWorkspaceFolder, verifyAgainstFS = true): TPromise<IAdapterExecutable> {
-
-		return this.configurationManager.debugAdapterExecutable(root ? root.uri : undefined, this.rawAdapter.type).then(adapterExecutable => {
-
-			if (adapterExecutable) {
-				return this.verifyAdapterDetails(adapterExecutable, verifyAgainstFS);
-			}
-
-			// try deprecated command based extension API
-			if (this.rawAdapter.adapterExecutableCommand) {
-				return this.commandService.executeCommand<IAdapterExecutable>(this.rawAdapter.adapterExecutableCommand, root ? root.uri.toString() : undefined).then(ad => {
-					return this.verifyAdapterDetails(ad, verifyAgainstFS);
-				});
-			}
-
-			// fallback: executable contribution specified in package.json
-			const aei = <IAdapterExecutableInfo>{
-				extensionFolderPath: this.extensionDescription.extensionFolderPath,
-				program: this.rawAdapter.program,
-				args: this.rawAdapter.args,
-				runtime: this.rawAdapter.runtime,
-				runtimeArgs: this.rawAdapter.runtimeArgs,
-				win: this.rawAdapter.win,
-				winx86: this.rawAdapter.winx86,
-				windows: this.rawAdapter.windows,
-				osx: this.rawAdapter.osx,
-				linux: this.rawAdapter.linux
-			};
-			return this.verifyAdapterDetails(LocalDebugAdapter.platformAdapterExecutable(aei), verifyAgainstFS);
-		});
-	}
-
-	private verifyAdapterDetails(details: IAdapterExecutable, verifyAgainstFS: boolean): TPromise<IAdapterExecutable> {
-
-		if (details.command) {
-			if (verifyAgainstFS) {
-				if (path.isAbsolute(details.command)) {
-					return new TPromise<IAdapterExecutable>((c, e) => {
-						fs.exists(details.command, exists => {
-							if (exists) {
-								c(details);
-							} else {
-								e(new Error(nls.localize('debugAdapterBinNotFound', "Debug adapter executable '{0}' does not exist.", details.command)));
-							}
-						});
-					});
-				} else {
-					// relative path
-					if (details.command.indexOf('/') < 0 && details.command.indexOf('\\') < 0) {
-						// no separators: command looks like a runtime name like 'node' or 'mono'
-						return TPromise.as(details);	// TODO: check that the runtime is available on PATH
-					}
-				}
-			} else {
-				return TPromise.as(details);
-			}
-		}
-
-		return TPromise.wrapError(new Error(nls.localize({ key: 'debugAdapterCannotDetermineExecutable', comment: ['Adapter executable file not found'] },
-			"Cannot determine executable for debug adapter '{0}'.", this.type)));
 	}
 
 	public get aiKey(): string {

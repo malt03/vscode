@@ -215,50 +215,87 @@ export class LocalDebugAdapter extends StreamDebugAdapter {
 	private executable: debug.IAdapterExecutable;
 	private serverProcess: cp.ChildProcess;
 
-	static platformAdapterExecutable(adapterInfo: debug.IAdapterExecutableInfo): debug.IAdapterExecutable {
 
-		const adapterExecutable = <debug.IAdapterExecutable>{
-			command: this.getProgram(adapterInfo),
-			args: this.getAttributeBasedOnPlatform(adapterInfo, 'args')
-		};
-		const runtime = this.getRuntime(adapterInfo);
-		if (runtime) {
-			const runtimeArgs = this.getAttributeBasedOnPlatform(adapterInfo, 'runtimeArgs');
-			adapterExecutable.args = (runtimeArgs || []).concat([adapterExecutable.command]).concat(adapterExecutable.args || []);
-			adapterExecutable.command = runtime;
+	static platformAdapterExecutable(adapterInfo: debug.IAdapterExecutableInfo, verifyAgainstFS = false): debug.IAdapterExecutable {
+
+		// if there is a "adapterExecutable" we just use that.
+		if (adapterInfo.adapterExecutable) {
+			return adapterInfo.adapterExecutable;
 		}
-		return adapterExecutable;
-	}
 
-	private static getRuntime(adapterInfo: debug.IAdapterExecutableInfo): string {
-		let runtime = this.getAttributeBasedOnPlatform(adapterInfo, 'runtime');
-		if (runtime && runtime.indexOf('./') === 0) {
-			runtime = paths.join(adapterInfo.extensionFolderPath, runtime);
+		// fall back: figure out the command and args from the information in the package.json
+
+		// what is the platform?
+		let platformInfo: debug.IRawEnvAdapter;
+		if (platform.isWindows && !process.env.hasOwnProperty('PROCESSOR_ARCHITEW6432')) {
+			platformInfo = adapterInfo.winx86;
+		} else if (platform.isWindows) {
+			platformInfo = adapterInfo.win || adapterInfo.windows;
+		} else if (platform.isMacintosh) {
+			platformInfo = adapterInfo.osx;
+		} else if (platform.isLinux) {
+			platformInfo = adapterInfo.linux;
 		}
-		return runtime;
-	}
+		platformInfo = platformInfo || adapterInfo;
 
-	private static getProgram(adapterInfo: debug.IAdapterExecutableInfo): string {
-		let program = this.getAttributeBasedOnPlatform(adapterInfo, 'program');
-		if (program) {
+		// these are the relevant attributes
+		let program = platformInfo.program || adapterInfo.program;
+		const args = platformInfo.args || adapterInfo.args;
+		let runtime = platformInfo.runtime || adapterInfo.runtime;
+		const runtimeArgs = platformInfo.runtimeArgs || adapterInfo.runtimeArgs;
+
+		// TODO: use platform specific variant
+		if (!paths.isAbsolute(program)) {
 			program = paths.join(adapterInfo.extensionFolderPath, program);
 		}
-		return program;
+
+		if (runtime) {
+			if (runtime.indexOf('./') === 0) {	// TODO
+				runtime = paths.join(adapterInfo.extensionFolderPath, runtime);
+			}
+			return {
+				command: runtime,
+				args: (runtimeArgs || []).concat([program]).concat(args || [])
+			};
+		} else {
+			return {
+				command: program,
+				args: args || []
+			};
+		}
 	}
 
-	private static getAttributeBasedOnPlatform(adapterInfo: debug.IAdapterExecutableInfo, key: string): any {
-		let result: any;
-		if (platform.isWindows && !process.env.hasOwnProperty('PROCESSOR_ARCHITEW6432') && adapterInfo.winx86) {
-			result = adapterInfo.winx86[key];
-		} else if (platform.isWindows && adapterInfo.win) {
-			result = adapterInfo.win[key];
-		} else if (platform.isMacintosh && adapterInfo.osx) {
-			result = adapterInfo.osx[key];
-		} else if (platform.isLinux && adapterInfo.linux) {
-			result = adapterInfo.linux[key];
+	/*
+	static verifyAdapterDetails(details: debug.IAdapterExecutable, verifyAgainstFS: boolean): TPromise<debug.IAdapterExecutable> {
+
+		if (details.command) {
+			if (verifyAgainstFS) {
+				if (path.isAbsolute(details.command)) {
+					return new TPromise<IAdapterExecutable>((c, e) => {
+						fs.exists(details.command, exists => {
+							if (exists) {
+								c(details);
+							} else {
+								e(new Error(nls.localize('debugAdapterBinNotFound', "Debug adapter executable '{0}' does not exist.", details.command)));
+							}
+						});
+					});
+				} else {
+					// relative path
+					if (details.command.indexOf('/') < 0 && details.command.indexOf('\\') < 0) {
+						// no separators: command looks like a runtime name like 'node' or 'mono'
+						return TPromise.as(details);	// TODO: check that the runtime is available on PATH
+					}
+				}
+			} else {
+				return TPromise.as(details);
+			}
 		}
-		return result || adapterInfo[key];
+
+		return TPromise.wrapError(new Error(nls.localize({ key: 'debugAdapterCannotDetermineExecutable', comment: ['Adapter executable file not found'] },
+			"Cannot determine executable for debug adapter '{0}'.", this.type)));
 	}
+	*/
 
 	constructor(executableInfo: debug.IAdapterExecutableInfo, private outputService?: IOutputService) {
 		super();
