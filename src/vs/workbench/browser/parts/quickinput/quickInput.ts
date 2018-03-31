@@ -9,7 +9,6 @@ import 'vs/css!./quickInput';
 import { Component } from 'vs/workbench/common/component';
 import { IQuickInputService } from 'vs/platform/quickinput/common/quickInput';
 import { IPartService } from 'vs/workbench/services/part/common/partService';
-import { Dimension } from 'vs/base/browser/builder';
 import * as dom from 'vs/base/browser/dom';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { registerThemingParticipant, ITheme, ICssStyleCollector, IThemeService } from 'vs/platform/theme/common/themeService';
@@ -40,7 +39,7 @@ export class QuickInputService extends Component implements IQuickInputService {
 	private static readonly ID = 'workbench.component.quickinput';
 	private static readonly MAX_WIDTH = 600;				// Max total width of quick open widget
 
-	private layoutDimensions: Dimension;
+	private layoutDimensions: dom.Dimension;
 	private container: HTMLElement;
 	private checkAll: HTMLInputElement;
 	private inputBox: QuickInputBox;
@@ -254,7 +253,7 @@ export class QuickInputService extends Component implements IQuickInputService {
 		return result;
 	}
 
-	public layout(dimension: Dimension): void {
+	public layout(dimension: dom.Dimension): void {
 		this.layoutDimensions = dimension;
 		this.updateLayout();
 	}
