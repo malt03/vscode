@@ -21,7 +21,6 @@ suite('ProgressBar', () => {
 
 	test('Progress Bar', function () {
 		const bar = new ProgressBar(fixture);
-		assert(bar.getContainer());
 		assert(bar.infinite());
 		assert(bar.total(100));
 		assert(bar.worked(50));

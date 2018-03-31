@@ -1033,7 +1033,7 @@ export class EditorGroupsControl extends Themable implements IEditorGroupsContro
 		// Progress Bar
 		const progressBar = new ProgressBar(container.getHTMLElement());
 		this.toUnbind.push(attachProgressBarStyler(progressBar, this.themeService));
-		progressBar.getContainer().hide();
+		progressBar.hide();
 		container.setProperty(EditorGroupsControl.PROGRESS_BAR_CONTROL_KEY, progressBar); // associate with container
 
 		// Sash for first position to support centered editor layout
@@ -2269,13 +2269,13 @@ export class EditorGroupsControl extends Themable implements IEditorGroupsContro
 
 		switch (state) {
 			case ProgressState.INFINITE:
-				progressbar.infinite().getContainer().show();
+				progressbar.infinite().show();
 				break;
 			case ProgressState.DONE:
-				progressbar.done().getContainer().hide();
+				progressbar.done().hide();
 				break;
 			case ProgressState.STOP:
-				progressbar.stop().getContainer().hide();
+				progressbar.stop().hide();
 				break;
 		}
 	}

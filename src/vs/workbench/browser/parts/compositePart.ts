@@ -391,7 +391,7 @@ export abstract class CompositePart<T extends Composite> extends Part {
 			compositeContainer.hide();
 
 			// Clear any running Progress
-			this.progressBar.stop().getContainer().hide();
+			this.progressBar.stop().hide();
 
 			// Empty Actions
 			this.toolBar.setActions([])();
@@ -492,7 +492,7 @@ export abstract class CompositePart<T extends Composite> extends Part {
 		}, div => {
 			this.progressBar = new ProgressBar(div.getHTMLElement());
 			this.toUnbind.push(attachProgressBarStyler(this.progressBar, this.themeService));
-			this.progressBar.getContainer().hide();
+			this.progressBar.hide();
 		});
 	}
 

@@ -197,11 +197,20 @@ export class ProgressBar {
 		return this;
 	}
 
-	/**
-	 * Returns the builder this progress bar is building in.
-	 */
-	public getContainer(): Builder {
-		return $(this.element);
+	public getContainer(): HTMLElement {
+		return this.element.getHTMLElement();
+	}
+
+	public show(delay?: number): void {
+		if (typeof delay === 'number') {
+			this.element.showDelayed(delay);
+		} else {
+			this.element.show();
+		}
+	}
+
+	public hide(): void {
+		this.element.hide();
 	}
 
 	public style(styles: IProgressBarStyles): void {

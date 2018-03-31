@@ -121,7 +121,7 @@ export class QuickInputService extends Component implements IQuickInputService {
 		}));
 
 		this.progressBar = new ProgressBar(this.container);
-		this.progressBar.getContainer().addClass('quick-input-progress');
+		dom.addClass(this.progressBar.getContainer(), 'quick-input-progress');
 		this.toUnbind.push(attachProgressBarStyler(this.progressBar, this.themeService));
 
 		this.checkboxList = this.instantiationService.createInstance(QuickInputCheckboxList, this.container);

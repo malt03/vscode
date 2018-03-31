@@ -373,7 +373,7 @@ export class QuickOpenController extends Component implements IQuickOpenService 
 				picksPromiseDone = true;
 
 				// Reset Progress
-				this.pickOpenWidget.getProgressBar().stop().getContainer().hide();
+				this.pickOpenWidget.getProgressBar().stop().hide();
 
 				// Model
 				const model = new QuickOpenModel([], new PickOpenActionProvider());
@@ -486,7 +486,7 @@ export class QuickOpenController extends Component implements IQuickOpenService 
 			// Progress if task takes a long time
 			TPromise.timeout(800).then(() => {
 				if (!picksPromiseDone && this.currentPickerToken === currentPickerToken) {
-					this.pickOpenWidget.getProgressBar().infinite().getContainer().show();
+					this.pickOpenWidget.getProgressBar().infinite().show();
 				}
 			});
 
@@ -741,7 +741,7 @@ export class QuickOpenController extends Component implements IQuickOpenService 
 
 		// Reset Progress
 		if (!instantProgress) {
-			this.quickOpenWidget.getProgressBar().stop().getContainer().hide();
+			this.quickOpenWidget.getProgressBar().stop().hide();
 		}
 
 		// Reset Extra Class
@@ -783,7 +783,7 @@ export class QuickOpenController extends Component implements IQuickOpenService 
 		// Progress if task takes a long time
 		TPromise.timeout(instantProgress ? 0 : 800).then(() => {
 			if (!resultPromiseDone && currentResultToken === this.currentResultToken) {
-				this.quickOpenWidget.getProgressBar().infinite().getContainer().show();
+				this.quickOpenWidget.getProgressBar().infinite().show();
 			}
 		});
 
@@ -792,7 +792,7 @@ export class QuickOpenController extends Component implements IQuickOpenService 
 			resultPromiseDone = true;
 
 			if (currentResultToken === this.currentResultToken) {
-				this.quickOpenWidget.getProgressBar().getContainer().hide();
+				this.quickOpenWidget.getProgressBar().hide();
 			}
 		}, (error: any) => {
 			resultPromiseDone = true;

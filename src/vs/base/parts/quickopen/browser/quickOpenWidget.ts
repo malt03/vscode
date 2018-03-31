@@ -160,7 +160,7 @@ export class QuickOpenWidget implements IModelProvider {
 
 			// Progress Bar
 			this.progressBar = new ProgressBar(div.clone(), { progressBarBackground: this.styles.progressBarBackground });
-			this.progressBar.getContainer().hide();
+			this.progressBar.hide();
 
 			// Input Field
 			div.div({ 'class': 'quick-open-input' }, inputContainer => {
@@ -780,7 +780,7 @@ export class QuickOpenWidget implements IModelProvider {
 		this.treeContainer.style({ height: (this.options.minItemsToShow ? this.options.minItemsToShow * 22 : 0) + 'px' });
 
 		// Clear any running Progress
-		this.progressBar.stop().getContainer().hide();
+		this.progressBar.stop().hide();
 
 		// Clear Focus
 		if (this.tree.isDOMFocused()) {
