@@ -85,11 +85,15 @@ export class ExtHostDebugService implements ExtHostDebugServiceShape {
 	}
 
 	public $startDASession(handle: number, execConfig: IAdapterExecutableInfo): TPromise<void> {
-		const proxy = this._debugServiceProxy;
+		const mythis = this;
 		const da = new class extends LocalDebugAdapter {
+
+			// DA -> VS Code
 			public acceptMessage(message: DebugProtocol.ProtocolMessage) {
-				proxy.$acceptDAMessage(handle, message);
+				mythis.convertPaths(message);
+				mythis._debugServiceProxy.$acceptDAMessage(handle, message);
 			}
+
 		}(execConfig);
 		this._debugAdapters.set(handle, da);
 		da.onError(err => this._debugServiceProxy.$acceptDAError(handle, err));
@@ -98,14 +102,99 @@ export class ExtHostDebugService implements ExtHostDebugServiceShape {
 	}
 
 	public $sendDAMessage(handle: number, message: DebugProtocol.ProtocolMessage): TPromise<void> {
+		// VS Code -> DA
+		this.convertPaths(message);
 		this._debugAdapters.get(handle).sendMessage(message);
 		return void 0;
+	}
+
+	private convertPaths(msg: DebugProtocol.ProtocolMessage) {
+		switch (msg.type) {
+			case 'event':
+				const event = <DebugProtocol.Event>msg;
+				switch (event.event) {
+					case 'output':
+						this.fixSourcePaths(false, (<DebugProtocol.OutputEvent>event).body.source);
+						break;
+					case 'loadedSource':
+						this.fixSourcePaths(false, (<DebugProtocol.LoadedSourceEvent>event).body.source);
+						break;
+					case 'breakpoint':
+						this.fixSourcePaths(false, (<DebugProtocol.BreakpointEvent>event).body.breakpoint.source);
+						break;
+					default:
+						break;
+				}
+				break;
+			case 'request':
+				const request = <DebugProtocol.Request>msg;
+				switch (request.command) {
+					case 'setBreakpoints':
+						this.fixSourcePaths(true, (<DebugProtocol.SetBreakpointsArguments>request.arguments).source);
+						break;
+					case 'source':
+						this.fixSourcePaths(true, (<DebugProtocol.SourceArguments>request.arguments).source);
+						break;
+					case 'gotoTargets':
+						this.fixSourcePaths(true, (<DebugProtocol.GotoTargetsArguments>request.arguments).source);
+						break;
+					default:
+						break;
+				}
+				break;
+			case 'response':
+				const response = <DebugProtocol.Response>msg;
+				switch (response.command) {
+					case 'stackTrace':
+						const r1 = <DebugProtocol.StackTraceResponse>response;
+						r1.body.stackFrames.forEach(frame => this.fixSourcePaths(false, frame.source));
+						break;
+					case 'loadedSources':
+						const r2 = <DebugProtocol.LoadedSourcesResponse>response;
+						r2.body.sources.forEach(source => this.fixSourcePaths(false, source));
+						break;
+					case 'scopes':
+						const r3 = <DebugProtocol.ScopesResponse>response;
+						r3.body.scopes.forEach(scope => this.fixSourcePaths(false, scope.source));
+						break;
+					case 'setFunctionBreakpoints':
+						const r4 = <DebugProtocol.SetFunctionBreakpointsResponse>response;
+						r4.body.breakpoints.forEach(bp => this.fixSourcePaths(false, bp.source));
+						break;
+					case 'setBreakpoints':
+						const r5 = <DebugProtocol.SetBreakpointsResponse>response;
+						r5.body.breakpoints.forEach(bp => this.fixSourcePaths(false, bp.source));
+						break;
+					default:
+						break;
+				}
+				break;
+		}
+	}
+
+	private fixSourcePaths(toDA: boolean, source: DebugProtocol.Source | undefined) {
+		if (source) {
+			if (toDA) {
+				console.log(`VSC -> DA ${source.path}`);
+				if (source.path && source.path.indexOf('file://') === 0) {
+					const uri = URI.parse(source.path);
+					source.path = uri.fsPath;
+				}
+			} else {
+				//if (path is not absolute) {
+				const uri = URI.file(source.path);
+				const s = uri.toString();
+				source.path = s;
+				// console.log(`DA -> VSC ${s}`);
+				//}
+			}
+		}
 	}
 
 	public $stopDASession(handle: number): TPromise<void> {
 		const da = this._debugAdapters.get(handle);
 		this._debugAdapters.delete(handle);
-		return da.stopSession();
+		return da ? da.stopSession() : void 0;
 	}
 
 	private startBreakpoints() {
